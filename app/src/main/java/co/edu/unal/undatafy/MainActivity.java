@@ -184,7 +184,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onMapLongClick(LatLng point) {
                 mMap.clear();
-                buildMarker("User Tap", "This is snippet", point, true);
+                buildMarker("User Tap", "This is snippet", point, BitmapDescriptorFactory.HUE_BLUE);
                 Location locationSelected = new Location(mLastKnownLocation);
                 locationSelected.setLatitude(point.latitude);
                 locationSelected.setLongitude(point.longitude);
@@ -215,7 +215,6 @@ public class MainActivity extends AppCompatActivity
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
-                        //Log.d(TAG, response.toString());
                         try {
                             JSONObject trafficLight;
                             Location location = new Location(point);
@@ -223,8 +222,29 @@ public class MainActivity extends AppCompatActivity
                                 trafficLight = response.getJSONObject(i);
                                 location.setLatitude(trafficLight.getDouble("y"));
                                 location.setLongitude(trafficLight.getDouble("x"));
+                                String name = String.format("%s - %s (%s)",
+                                        trafficLight.getString("codid"),
+                                        trafficLight.getString("direccion"),
+                                        trafficLight.getString("localidad")
+                                );
+                                String snippet = String.format("%s (%s)",
+                                        trafficLight.getString("tipointer"),
+                                        trafficLight.getString("fechaimplementacion")
+                                );
                                 if(point.distanceTo(location) <= distance) {
-                                    buildMarker(trafficLight.getString("direccion"), trafficLight.getString("tipointer"), new LatLng(location.getLatitude(), location.getLongitude()), false);
+                                    float hue;
+                                    switch (trafficLight.getString("tipointer")){
+                                        case "VEHICULAR":
+                                            hue = BitmapDescriptorFactory.HUE_ORANGE;
+                                            break;
+                                        case "EXCLUSIVA PEATONAL":
+                                            hue = BitmapDescriptorFactory.HUE_GREEN;
+                                            break;
+                                        default:
+                                            hue = BitmapDescriptorFactory.HUE_RED;
+                                            break;
+                                    }
+                                    buildMarker(name, snippet, new LatLng(location.getLatitude(), location.getLongitude()), hue);
                                 }
                             }
                         } catch (JSONException e) {
@@ -342,14 +362,12 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void buildMarker(String title, String snippet, LatLng point, boolean isTap){
+    private void buildMarker(String title, String snippet, LatLng point, float hue){
         MarkerOptions marker = new MarkerOptions()
                 .title(title)
                 .position(point)
                 .snippet(snippet);
-        if (isTap){
-            marker = marker.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-        }
+        marker = marker.icon(BitmapDescriptorFactory.defaultMarker(hue));
         mMap.addMarker(marker);
     }
 }
